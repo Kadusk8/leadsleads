@@ -120,13 +120,21 @@ export default function WebhookChatPage() {
 
     } catch (error) {
       console.error('Webhook error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+      let displayErrorMessage = 'An unknown error occurred.';
+      if (error instanceof Error) {
+        if (error.message === 'Failed to fetch') {
+          displayErrorMessage = 'Failed to connect to the webhook server. This could be due to a network issue, the server being temporarily unavailable, or a CORS configuration problem on the server. Please check your internet connection and try again. If the issue persists, the webhook server administrator may need to be contacted.';
+        } else {
+          displayErrorMessage = error.message;
+        }
+      }
+      
       const botErrorMessage: Message = {
         id: Date.now().toString() + '-bot-error',
         text: (
           <div className="text-destructive-foreground bg-destructive p-2 rounded-md">
             <h4 className="font-semibold flex items-center"><AlertTriangle className="w-4 h-4 mr-1.5"/>Error Processing Request</h4>
-            <p className="text-xs mt-0.5">{errorMessage}</p>
+            <p className="text-xs mt-0.5">{displayErrorMessage}</p>
           </div>
         ),
         sender: 'bot',
@@ -135,7 +143,7 @@ export default function WebhookChatPage() {
       setMessages((prev) => [...prev, botErrorMessage]);
       toast({
         title: "Webhook Error",
-        description: errorMessage,
+        description: displayErrorMessage,
         variant: "destructive",
       });
     } finally {
