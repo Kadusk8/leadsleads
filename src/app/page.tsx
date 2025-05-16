@@ -20,7 +20,7 @@ export default function WebhookChatPage() {
     setCurrentYear(new Date().getFullYear());
   }, []);
 
-  const webhookUrl = 'https://n8n.automacaocomia.pro/webhook-test/292392d1-5d1c-40b6-bf11-ddbd968a0ff7';
+  const webhookUrl = 'https://webhook.automacaocomia.pro/webhook/292392d1-5d1c-40b6-bf11-ddbd968a0ff7';
 
   const handleSendMessage = async (messageText: string) => {
     if (!messageText.trim()) return;
@@ -60,6 +60,7 @@ export default function WebhookChatPage() {
       try {
         responseData = JSON.parse(responseBodyText);
       } catch (e) {
+        // If JSON parsing fails, treat the response as raw text
         responseData = { rawResponse: responseBodyText };
       }
 
@@ -81,6 +82,7 @@ export default function WebhookChatPage() {
       let newTableData: Record<string, any>[] = [];
       let dataForTableProcessing: any = responseData;
 
+      // Prioritize 'body' or 'data' keys if they exist and are objects/arrays
       if (responseData && typeof responseData === 'object' && !Array.isArray(responseData)) {
           if (('body' in responseData) && (typeof responseData.body === 'object' || Array.isArray(responseData.body))) {
               dataForTableProcessing = responseData.body;
@@ -93,16 +95,20 @@ export default function WebhookChatPage() {
           if (dataForTableProcessing.length > 0) {
               const firstItemType = typeof dataForTableProcessing[0];
               if (firstItemType === 'object' && dataForTableProcessing[0] !== null) {
+                  // Array of objects, this is ideal for the table
                   newTableData = dataForTableProcessing.filter(item => typeof item === 'object' && item !== null);
                   if (newTableData.length > 0) {
                       botResponseMessage = `Recebemos ${newTableData.length} ${newTableData.length === 1 ? 'registro tabular' : 'registros tabulares'}. Veja a tabela abaixo.`;
                   } else {
+                      // This case is unlikely if firstItemType was 'object' and not null, but good to have
                       botResponseMessage = "O webhook retornou uma lista de objetos, mas após a filtragem, não restaram dados válidos para a tabela.";
                   }
               } else if (['string', 'number', 'boolean'].includes(firstItemType)) {
-                  newTableData = dataForTableProcessing.map(item => ({ Item: item }));
+                  // Array of simple types (strings, numbers, booleans)
+                  newTableData = dataForTableProcessing.map(item => ({ Item: item })); // Create objects with a single "Item" key
                   botResponseMessage = `Recebemos uma lista com ${newTableData.length} ${newTableData.length === 1 ? 'item simples' : 'itens simples'}. Veja a tabela abaixo.`;
               } else {
+                  // Array of other types (e.g., array of arrays, or mixed non-object types not suitable for direct table mapping)
                   botResponseMessage = (
                       <div>
                           <p>O webhook retornou uma lista, mas seu conteúdo não é diretamente tabular (objetos) nem uma lista simples (texto/números) para exibição direta:</p>
@@ -112,10 +118,12 @@ export default function WebhookChatPage() {
                   );
               }
           } else {
+              // Empty array
               botResponseMessage = "O webhook retornou uma lista vazia.";
               newTableData = [];
           }
       } else if (typeof dataForTableProcessing === 'object' && dataForTableProcessing !== null) {
+          // It's an object, not an array. Let's see if any of its properties is an array of objects.
           let foundArrayInObject = false;
           for (const key in dataForTableProcessing) {
               if (Array.isArray(dataForTableProcessing[key])) {
@@ -123,18 +131,21 @@ export default function WebhookChatPage() {
                   if (currentArray.length > 0) {
                       const firstItemType = typeof currentArray[0];
                       if (firstItemType === 'object' && currentArray[0] !== null) {
+                          // Found an array of objects within the object
                           newTableData = currentArray.filter((item: any) => typeof item === 'object' && item !== null);
                            if (newTableData.length > 0) {
                             botResponseMessage = `Encontramos ${newTableData.length} ${newTableData.length === 1 ? 'registro tabular' : 'registros tabulares'} na chave '${key}'. Veja a tabela abaixo.`;
                             foundArrayInObject = true;
-                            break;
+                            break; 
                            }
                       } else if (['string', 'number', 'boolean'].includes(firstItemType)) {
+                          // Found an array of simple types within the object
                           newTableData = currentArray.map((item: any) => ({ Item: item }));
                           botResponseMessage = `Encontramos uma lista com ${newTableData.length} ${newTableData.length === 1 ? 'item simples' : 'itens simples'} na chave '${key}'. Veja a tabela abaixo.`;
                           foundArrayInObject = true;
                           break;
                       } else {
+                         // Found an array of other types
                          botResponseMessage = (
                             <div>
                                 <p>O webhook retornou uma lista (na chave '{key}'), mas seu conteúdo não é diretamente tabular (objetos) nem uma lista simples (texto/números) para exibição direta:</p>
@@ -142,11 +153,12 @@ export default function WebhookChatPage() {
                                 {currentArray.length > 5 && <p className="text-xs mt-1">...e mais {currentArray.length - 5} itens.</p>}
                             </div>
                         );
-                        newTableData = [];
-                        foundArrayInObject = true;
+                        newTableData = []; // Don't show this in table
+                        foundArrayInObject = true; // We've addressed it
                         break;
                       }
                   } else {
+                      // Found an empty array within the object
                       botResponseMessage = `A chave '${key}' continha uma lista vazia.`;
                       newTableData = [];
                       foundArrayInObject = true;
@@ -156,10 +168,14 @@ export default function WebhookChatPage() {
           }
 
           if (!foundArrayInObject) {
+              // The object itself does not contain an array.
+              // Check for common "message" patterns or "rawResponse"
               const keys = Object.keys(dataForTableProcessing);
               if (keys.length === 1 && keys[0] === 'message' && typeof dataForTableProcessing.message === 'string' && dataForTableProcessing.message.toLowerCase().includes(messageText.substring(0,10).toLowerCase())) {
+                  // Likely a confirmation message from n8n e.g. { message: "Workflow executed..."}
                   botResponseMessage = "O webhook confirmou o recebimento da sua mensagem. Nenhum dado tabular adicional foi retornado.";
               } else if (keys.length === 1 && keys[0] === 'rawResponse' && typeof dataForTableProcessing.rawResponse === 'string') {
+                  // This means JSON parsing failed earlier, and we have the raw text.
                   botResponseMessage = (
                     <div>
                         <p>O webhook retornou uma resposta de texto não JSON:</p>
@@ -167,12 +183,14 @@ export default function WebhookChatPage() {
                     </div>
                 );
               } else {
+                  // Treat the whole object as a single row for the table
                   newTableData = [dataForTableProcessing]; 
                   botResponseMessage = "Recebemos um objeto de dados. Veja a tabela abaixo.";
               }
           }
       } else if (dataForTableProcessing !== undefined && dataForTableProcessing !== null) {
-          if (typeof dataForTableProcessing === 'object' && dataForTableProcessing.rawResponse) {
+          // Neither an array nor an object, likely a simple string/number/boolean response or the rawResponse case.
+          if (typeof dataForTableProcessing === 'object' && dataForTableProcessing.rawResponse) { // Check again for rawResponse if it wasn't caught earlier
              botResponseMessage = (
                 <div>
                     <p>O webhook retornou uma resposta de texto:</p>
@@ -183,6 +201,7 @@ export default function WebhookChatPage() {
             botResponseMessage = `Resposta não tabular do webhook: ${String(dataForTableProcessing)}`;
           }
       } else {
+          // Undefined or null response
           botResponseMessage = "O webhook retornou uma resposta vazia ou inesperada.";
       }
       
