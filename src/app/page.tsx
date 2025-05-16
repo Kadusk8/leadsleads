@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type React from 'react';
 import { ChatInterface, type Message } from '@/components/chat/ChatInterface';
 import { DataTable } from '@/components/data/DataTable';
@@ -14,6 +15,11 @@ export default function WebhookChatPage() {
   const [tableData, setTableData] = useState<Record<string, any>[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const [currentYear, setCurrentYear] = useState<number | null>(null);
+
+  useEffect(() => {
+    setCurrentYear(new Date().getFullYear());
+  }, []);
 
   const webhookUrl = 'https://n8n.automacaocomia.pro/webhook-test/292392d1-5d1c-40b6-bf11-ddbd968a0ff7';
 
@@ -170,7 +176,7 @@ export default function WebhookChatPage() {
         )}
       </div>
        <footer className="w-full max-w-4xl mt-12 pt-6 border-t text-center text-sm text-muted-foreground">
-        <p>&copy; {new Date().getFullYear()} Webhook Data Exporter. Built with Next.js and ShadCN UI.</p>
+        <p>&copy; {currentYear !== null ? currentYear : ''} Webhook Data Exporter. Built with Next.js and ShadCN UI.</p>
       </footer>
     </div>
   );
