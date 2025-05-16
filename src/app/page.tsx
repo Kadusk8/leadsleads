@@ -60,6 +60,7 @@ export default function WebhookChatPage() {
       try {
         responseData = JSON.parse(responseBodyText);
       } catch (e) {
+        // Se não for JSON, responseData será o texto bruto
         responseData = { rawResponse: responseBodyText };
       }
 
@@ -69,58 +70,111 @@ export default function WebhookChatPage() {
         let errorDetail = `Status: ${response.status}. `;
         if (typeof responseData === 'object' && responseData !== null && responseData.message) {
           errorDetail += responseData.message;
+        } else if (responseData && responseData.rawResponse) {
+           errorDetail += `Resposta: ${String(responseData.rawResponse).substring(0, 100)}${String(responseData.rawResponse).length > 100 ? '...' : ''}`;
         } else if (responseBodyText) {
            errorDetail += `Resposta: ${responseBodyText.substring(0, 100)}${responseBodyText.length > 100 ? '...' : ''}`;
         }
         throw new Error(`Falha na requisição ao webhook: ${errorDetail}`);
       }
       
-      let botText: string | React.ReactNode = "Recebemos os dados. Veja a tabela abaixo.";
+      let botResponseMessage: string | React.ReactNode = "Processamos a resposta do webhook.";
       let newTableData: Record<string, any>[] = [];
+      let dataForTableProcessing: any = responseData;
 
-      let dataToProcess = responseData;
-      if (responseData && typeof responseData === 'object') {
-         if ('body' in responseData && (typeof responseData.body === 'object' || Array.isArray(responseData.body))) {
-            dataToProcess = responseData.body;
-         } else if ('data' in responseData && (typeof responseData.data === 'object' || Array.isArray(responseData.data))) {
-           dataToProcess = responseData.data;
-         }
+      // 1. Tentar descer para 'body' ou 'data' se forem chaves comuns e contiverem objetos/arrays
+      // Essas são chaves comuns que o n8n pode usar para encapsular a saída principal.
+      if (responseData && typeof responseData === 'object' && !Array.isArray(responseData)) {
+          if (('body' in responseData) && (typeof responseData.body === 'object' || Array.isArray(responseData.body))) {
+              dataForTableProcessing = responseData.body;
+          } else if (('data' in responseData) && (typeof responseData.data === 'object' || Array.isArray(responseData.data))) {
+              dataForTableProcessing = responseData.data;
+          }
       }
 
-      if (Array.isArray(dataToProcess)) {
-        newTableData = dataToProcess.filter(item => typeof item === 'object' && item !== null);
-        if (newTableData.length === 0 && dataToProcess.length > 0) {
-          botText = (
-            <div>
-              <p>O webhook retornou uma lista de dados não tabulares:</p>
-              <ul className="list-disc pl-5 mt-1 text-xs">
-                {dataToProcess.slice(0, 5).map((item, idx) => <li key={idx}>{String(item)}</li>)}
-                {dataToProcess.length > 5 && <li>...e mais {dataToProcess.length - 5} itens.</li>}
-              </ul>
-            </div>
-          );
-        } else if (newTableData.length === 0) {
-          botText = "O webhook retornou uma lista vazia ou sem objetos para a tabela.";
-        }
-      } else if (typeof dataToProcess === 'object' && dataToProcess !== null) {
-        const keys = Object.keys(dataToProcess);
-        if (keys.length === 1 && keys[0] === 'message' && dataToProcess.message === messageText) {
-             botText = "O webhook confirmou o recebimento da sua mensagem. Nenhum dado tabular distinto foi retornado.";
-        } else if (keys.includes('message') && dataToProcess.message === messageText && keys.length <= 3) {
-            botText = "O webhook confirmou o recebimento da sua mensagem. Veja detalhes na tabela, se disponíveis.";
-            newTableData = [dataToProcess];
-        } else {
-            newTableData = [dataToProcess];
-        }
+      // 2. Processar 'dataForTableProcessing' para newTableData
+      if (Array.isArray(dataForTableProcessing)) {
+          // É diretamente um array
+          newTableData = dataForTableProcessing.filter(item => typeof item === 'object' && item !== null);
+          if (newTableData.length > 0) {
+              botResponseMessage = `Recebemos ${newTableData.length} ${newTableData.length === 1 ? 'registro' : 'registros'}. Veja a tabela abaixo.`;
+          } else if (dataForTableProcessing.length > 0) { // Array, mas não de objetos (ex: array de strings)
+              botResponseMessage = (
+                  <div>
+                      <p>O webhook retornou uma lista de dados, mas não em formato tabular para exibição direta:</p>
+                      <pre className="whitespace-pre-wrap text-xs bg-muted p-2 rounded mt-1 max-h-32 overflow-auto">{JSON.stringify(dataForTableProcessing.slice(0,5), null, 2)}</pre>
+                      {dataForTableProcessing.length > 5 && <p className="text-xs mt-1">...e mais {dataForTableProcessing.length - 5} itens.</p>}
+                  </div>
+              );
+          } else { // Array vazio
+              botResponseMessage = "O webhook retornou uma lista vazia.";
+          }
+      } else if (typeof dataForTableProcessing === 'object' && dataForTableProcessing !== null) {
+          // É um objeto, procurar um array de objetos dentro dele
+          let foundArrayInObject = false;
+          for (const key in dataForTableProcessing) {
+              if (Array.isArray(dataForTableProcessing[key])) {
+                  const potentialArray = dataForTableProcessing[key].filter((item: any) => typeof item === 'object' && item !== null);
+                  if (potentialArray.length > 0) {
+                      newTableData = potentialArray;
+                      botResponseMessage = `Encontramos ${newTableData.length} ${newTableData.length === 1 ? 'registro' : 'registros'} na chave '${key}'. Veja a tabela abaixo.`;
+                      foundArrayInObject = true;
+                      break; 
+                  } else if (dataForTableProcessing[key].length > 0) { // É um array, mas não de objetos, dentro de uma chave
+                       botResponseMessage = (
+                          <div>
+                              <p>O webhook retornou uma lista (na chave '{key}'), mas não em formato tabular para exibição direta:</p>
+                              <pre className="whitespace-pre-wrap text-xs bg-muted p-2 rounded mt-1 max-h-32 overflow-auto">{JSON.stringify(dataForTableProcessing[key].slice(0,5), null, 2)}</pre>
+                              {dataForTableProcessing[key].length > 5 && <p className="text-xs mt-1">...e mais {dataForTableProcessing[key].length - 5} itens.</p>}
+                          </div>
+                      );
+                      foundArrayInObject = true; // Previne o fallback para objeto único se encontrarmos um array não tabular
+                      break;
+                  }
+              }
+          }
+
+          if (!foundArrayInObject) {
+              // Nenhum array tabular encontrado dentro do objeto, ou o objeto não continha arrays.
+              // Tratar o objeto 'dataForTableProcessing' como uma única linha, a menos que seja um eco.
+              const keys = Object.keys(dataForTableProcessing);
+              if (keys.length === 1 && keys[0] === 'message' && typeof dataForTableProcessing.message === 'string' && dataForTableProcessing.message.toLowerCase().includes(messageText.substring(0,10).toLowerCase())) {
+                  botResponseMessage = "O webhook confirmou o recebimento da sua mensagem. Nenhum dado tabular adicional foi retornado.";
+              } else if (keys.length === 1 && keys[0] === 'rawResponse' && typeof dataForTableProcessing.rawResponse === 'string') {
+                  botResponseMessage = (
+                    <div>
+                        <p>O webhook retornou uma resposta de texto não JSON:</p>
+                        <pre className="whitespace-pre-wrap text-xs bg-muted p-2 rounded mt-1 max-h-32 overflow-auto">{dataForTableProcessing.rawResponse.substring(0, 200)}{dataForTableProcessing.rawResponse.length > 200 ? '...' : ''}</pre>
+                    </div>
+                );
+              } else {
+                  newTableData = [dataForTableProcessing]; // Tratar o objeto como uma única linha
+                  botResponseMessage = "Recebemos um objeto de dados. Veja a tabela abaixo.";
+              }
+          }
+      } else if (dataForTableProcessing !== undefined && dataForTableProcessing !== null) {
+          // Não é array nem objeto (ex: string, número, booleano), mas não é undefined/null.
+          // Se for a rawResponse, mostre de forma formatada.
+          if (typeof dataForTableProcessing === 'object' && dataForTableProcessing.rawResponse) {
+             botResponseMessage = (
+                <div>
+                    <p>O webhook retornou uma resposta de texto:</p>
+                    <pre className="whitespace-pre-wrap text-xs bg-muted p-2 rounded mt-1 max-h-32 overflow-auto">{String(dataForTableProcessing.rawResponse).substring(0, 200)}{String(dataForTableProcessing.rawResponse).length > 200 ? '...' : ''}</pre>
+                </div>
+              );
+          } else {
+            botResponseMessage = `Resposta do webhook: ${String(dataForTableProcessing)}`;
+          }
       } else {
-        botText = `Resposta do webhook: ${String(dataToProcess)}`;
+          // Resposta foi undefined ou null
+          botResponseMessage = "O webhook retornou uma resposta vazia ou inesperada.";
       }
       
       setTableData(newTableData);
 
       const botMessage: Message = {
         id: Date.now().toString() + '-bot',
-        text: botText,
+        text: botResponseMessage,
         sender: 'bot',
         timestamp: new Date(),
       };
@@ -132,10 +186,12 @@ export default function WebhookChatPage() {
 
       let displayErrorMessage = 'Ocorreu um erro desconhecido.';
       if (error instanceof Error) {
-        if (error.message.startsWith('Failed to fetch') || error.message.includes('NetworkError') || error.message.includes('Falha na requisição ao webhook')) {
-          displayErrorMessage = 'Falha ao conectar ao servidor do webhook. Isso pode ser devido a um problema de rede, o servidor estar temporariamente indisponível ou um problema de configuração CORS no servidor. Por favor, verifique sua conexão com a internet e tente novamente. Se o problema persistir, o administrador do servidor do webhook pode precisar ser contatado.';
-        } else {
+        if (error.message.startsWith('Failed to fetch') || error.message.includes('NetworkError')) {
+          displayErrorMessage = 'Falha ao conectar ao servidor do webhook. Verifique sua conexão ou se o servidor está online e configurado para CORS.';
+        } else if (error.message.includes('Falha na requisição ao webhook')) {
           displayErrorMessage = error.message;
+        } else {
+          displayErrorMessage = `Erro ao processar: ${error.message}`;
         }
       }
       
@@ -162,7 +218,7 @@ export default function WebhookChatPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen items-center justify-start p-4 pt-8 md:p-8 md:pt-12 bg-background">
+    <div className="flex flex-col min-h-screen items-center justify-start p-4 pt-12 md:p-8 md:pt-16 bg-background">
       <header className="w-full max-w-4xl mb-10 text-center">
         <div className="flex flex-col items-center justify-center gap-3 mb-4">
           <WebhookIcon className="h-12 w-12 text-primary" />
@@ -176,7 +232,7 @@ export default function WebhookChatPage() {
       </header>
       
       <div className="w-full max-w-4xl grid grid-cols-1 gap-8">
-        <Card className="shadow-xl overflow-hidden h-[60vh] md:h-[calc(100vh-300px)] max-h-[650px] flex flex-col rounded-lg">
+        <Card className="shadow-xl overflow-hidden h-[60vh] md:h-[calc(100vh-320px)] max-h-[700px] flex flex-col rounded-lg"> {/* Increased max-h slightly */}
             <ChatInterface
               messages={messages}
               onSendMessage={handleSendMessage}
