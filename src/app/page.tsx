@@ -60,7 +60,6 @@ export default function WebhookChatPage() {
       try {
         responseData = JSON.parse(responseBodyText);
       } catch (e) {
-        // Se não for JSON, responseData será o texto bruto
         responseData = { rawResponse: responseBodyText };
       }
 
@@ -82,8 +81,6 @@ export default function WebhookChatPage() {
       let newTableData: Record<string, any>[] = [];
       let dataForTableProcessing: any = responseData;
 
-      // 1. Tentar descer para 'body' ou 'data' se forem chaves comuns e contiverem objetos/arrays
-      // Essas são chaves comuns que o n8n pode usar para encapsular a saída principal.
       if (responseData && typeof responseData === 'object' && !Array.isArray(responseData)) {
           if (('body' in responseData) && (typeof responseData.body === 'object' || Array.isArray(responseData.body))) {
               dataForTableProcessing = responseData.body;
@@ -92,51 +89,73 @@ export default function WebhookChatPage() {
           }
       }
 
-      // 2. Processar 'dataForTableProcessing' para newTableData
       if (Array.isArray(dataForTableProcessing)) {
-          // É diretamente um array
-          newTableData = dataForTableProcessing.filter(item => typeof item === 'object' && item !== null);
-          if (newTableData.length > 0) {
-              botResponseMessage = `Recebemos ${newTableData.length} ${newTableData.length === 1 ? 'registro' : 'registros'}. Veja a tabela abaixo.`;
-          } else if (dataForTableProcessing.length > 0) { // Array, mas não de objetos (ex: array de strings)
-              botResponseMessage = (
-                  <div>
-                      <p>O webhook retornou uma lista de dados, mas não em formato tabular para exibição direta:</p>
-                      <pre className="whitespace-pre-wrap text-xs bg-muted p-2 rounded mt-1 max-h-32 overflow-auto">{JSON.stringify(dataForTableProcessing.slice(0,5), null, 2)}</pre>
-                      {dataForTableProcessing.length > 5 && <p className="text-xs mt-1">...e mais {dataForTableProcessing.length - 5} itens.</p>}
-                  </div>
-              );
-          } else { // Array vazio
+          if (dataForTableProcessing.length > 0) {
+              const firstItemType = typeof dataForTableProcessing[0];
+              if (firstItemType === 'object' && dataForTableProcessing[0] !== null) {
+                  newTableData = dataForTableProcessing.filter(item => typeof item === 'object' && item !== null);
+                  if (newTableData.length > 0) {
+                      botResponseMessage = `Recebemos ${newTableData.length} ${newTableData.length === 1 ? 'registro tabular' : 'registros tabulares'}. Veja a tabela abaixo.`;
+                  } else {
+                      botResponseMessage = "O webhook retornou uma lista de objetos, mas após a filtragem, não restaram dados válidos para a tabela.";
+                  }
+              } else if (['string', 'number', 'boolean'].includes(firstItemType)) {
+                  newTableData = dataForTableProcessing.map(item => ({ Item: item }));
+                  botResponseMessage = `Recebemos uma lista com ${newTableData.length} ${newTableData.length === 1 ? 'item simples' : 'itens simples'}. Veja a tabela abaixo.`;
+              } else {
+                  botResponseMessage = (
+                      <div>
+                          <p>O webhook retornou uma lista, mas seu conteúdo não é diretamente tabular (objetos) nem uma lista simples (texto/números) para exibição direta:</p>
+                          <pre className="whitespace-pre-wrap text-xs bg-muted p-2 rounded mt-1 max-h-32 overflow-auto">{JSON.stringify(dataForTableProcessing.slice(0,5), null, 2)}</pre>
+                          {dataForTableProcessing.length > 5 && <p className="text-xs mt-1">...e mais {dataForTableProcessing.length - 5} itens.</p>}
+                      </div>
+                  );
+              }
+          } else {
               botResponseMessage = "O webhook retornou uma lista vazia.";
+              newTableData = [];
           }
       } else if (typeof dataForTableProcessing === 'object' && dataForTableProcessing !== null) {
-          // É um objeto, procurar um array de objetos dentro dele
           let foundArrayInObject = false;
           for (const key in dataForTableProcessing) {
               if (Array.isArray(dataForTableProcessing[key])) {
-                  const potentialArray = dataForTableProcessing[key].filter((item: any) => typeof item === 'object' && item !== null);
-                  if (potentialArray.length > 0) {
-                      newTableData = potentialArray;
-                      botResponseMessage = `Encontramos ${newTableData.length} ${newTableData.length === 1 ? 'registro' : 'registros'} na chave '${key}'. Veja a tabela abaixo.`;
+                  const currentArray = dataForTableProcessing[key];
+                  if (currentArray.length > 0) {
+                      const firstItemType = typeof currentArray[0];
+                      if (firstItemType === 'object' && currentArray[0] !== null) {
+                          newTableData = currentArray.filter((item: any) => typeof item === 'object' && item !== null);
+                           if (newTableData.length > 0) {
+                            botResponseMessage = `Encontramos ${newTableData.length} ${newTableData.length === 1 ? 'registro tabular' : 'registros tabulares'} na chave '${key}'. Veja a tabela abaixo.`;
+                            foundArrayInObject = true;
+                            break;
+                           }
+                      } else if (['string', 'number', 'boolean'].includes(firstItemType)) {
+                          newTableData = currentArray.map((item: any) => ({ Item: item }));
+                          botResponseMessage = `Encontramos uma lista com ${newTableData.length} ${newTableData.length === 1 ? 'item simples' : 'itens simples'} na chave '${key}'. Veja a tabela abaixo.`;
+                          foundArrayInObject = true;
+                          break;
+                      } else {
+                         botResponseMessage = (
+                            <div>
+                                <p>O webhook retornou uma lista (na chave '{key}'), mas seu conteúdo não é diretamente tabular (objetos) nem uma lista simples (texto/números) para exibição direta:</p>
+                                <pre className="whitespace-pre-wrap text-xs bg-muted p-2 rounded mt-1 max-h-32 overflow-auto">{JSON.stringify(currentArray.slice(0,5), null, 2)}</pre>
+                                {currentArray.length > 5 && <p className="text-xs mt-1">...e mais {currentArray.length - 5} itens.</p>}
+                            </div>
+                        );
+                        newTableData = [];
+                        foundArrayInObject = true;
+                        break;
+                      }
+                  } else {
+                      botResponseMessage = `A chave '${key}' continha uma lista vazia.`;
+                      newTableData = [];
                       foundArrayInObject = true;
-                      break; 
-                  } else if (dataForTableProcessing[key].length > 0) { // É um array, mas não de objetos, dentro de uma chave
-                       botResponseMessage = (
-                          <div>
-                              <p>O webhook retornou uma lista (na chave '{key}'), mas não em formato tabular para exibição direta:</p>
-                              <pre className="whitespace-pre-wrap text-xs bg-muted p-2 rounded mt-1 max-h-32 overflow-auto">{JSON.stringify(dataForTableProcessing[key].slice(0,5), null, 2)}</pre>
-                              {dataForTableProcessing[key].length > 5 && <p className="text-xs mt-1">...e mais {dataForTableProcessing[key].length - 5} itens.</p>}
-                          </div>
-                      );
-                      foundArrayInObject = true; // Previne o fallback para objeto único se encontrarmos um array não tabular
                       break;
                   }
               }
           }
 
           if (!foundArrayInObject) {
-              // Nenhum array tabular encontrado dentro do objeto, ou o objeto não continha arrays.
-              // Tratar o objeto 'dataForTableProcessing' como uma única linha, a menos que seja um eco.
               const keys = Object.keys(dataForTableProcessing);
               if (keys.length === 1 && keys[0] === 'message' && typeof dataForTableProcessing.message === 'string' && dataForTableProcessing.message.toLowerCase().includes(messageText.substring(0,10).toLowerCase())) {
                   botResponseMessage = "O webhook confirmou o recebimento da sua mensagem. Nenhum dado tabular adicional foi retornado.";
@@ -148,13 +167,11 @@ export default function WebhookChatPage() {
                     </div>
                 );
               } else {
-                  newTableData = [dataForTableProcessing]; // Tratar o objeto como uma única linha
+                  newTableData = [dataForTableProcessing]; 
                   botResponseMessage = "Recebemos um objeto de dados. Veja a tabela abaixo.";
               }
           }
       } else if (dataForTableProcessing !== undefined && dataForTableProcessing !== null) {
-          // Não é array nem objeto (ex: string, número, booleano), mas não é undefined/null.
-          // Se for a rawResponse, mostre de forma formatada.
           if (typeof dataForTableProcessing === 'object' && dataForTableProcessing.rawResponse) {
              botResponseMessage = (
                 <div>
@@ -163,10 +180,9 @@ export default function WebhookChatPage() {
                 </div>
               );
           } else {
-            botResponseMessage = `Resposta do webhook: ${String(dataForTableProcessing)}`;
+            botResponseMessage = `Resposta não tabular do webhook: ${String(dataForTableProcessing)}`;
           }
       } else {
-          // Resposta foi undefined ou null
           botResponseMessage = "O webhook retornou uma resposta vazia ou inesperada.";
       }
       
@@ -232,7 +248,7 @@ export default function WebhookChatPage() {
       </header>
       
       <div className="w-full max-w-4xl grid grid-cols-1 gap-8">
-        <Card className="shadow-xl overflow-hidden h-[60vh] md:h-[calc(100vh-320px)] max-h-[700px] flex flex-col rounded-lg"> {/* Increased max-h slightly */}
+        <Card className="shadow-xl overflow-hidden h-[60vh] md:h-[calc(100vh-320px)] max-h-[700px] flex flex-col rounded-lg">
             <ChatInterface
               messages={messages}
               onSendMessage={handleSendMessage}
@@ -258,3 +274,5 @@ export default function WebhookChatPage() {
     </div>
   );
 }
+
+    
