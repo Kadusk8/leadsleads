@@ -1,3 +1,4 @@
+
 "use client";
 
 import type React from 'react';
@@ -44,9 +45,9 @@ export function ChatInterface({ messages, onSendMessage, isLoading }: ChatInterf
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-card">
       <ScrollArea className="flex-grow p-4 pr-2" ref={scrollAreaRef}>
-        <div className="space-y-2">
+        <div className="space-y-3">
           {messages.map((msg) => (
             <MessageBubble
               key={msg.id}
@@ -58,17 +59,17 @@ export function ChatInterface({ messages, onSendMessage, isLoading }: ChatInterf
         </div>
       </ScrollArea>
       <Separator />
-      <form onSubmit={handleSubmit} className="flex items-center gap-2 p-4 border-t">
+      <form onSubmit={handleSubmit} className="flex items-center gap-3 p-4 border-t bg-card">
         <Input
           type="text"
-          placeholder="Type your message..."
+          placeholder="Digite sua mensagem..."
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          className="flex-grow bg-input focus-visible:ring-ring"
+          className="flex-grow bg-input focus-visible:ring-primary text-base"
           disabled={isLoading}
-          aria-label="Chat message input"
+          aria-label="Entrada de mensagem do chat"
         />
-        <Button type="submit" disabled={isLoading || !inputValue.trim()} aria-label="Send message">
+        <Button type="submit" disabled={isLoading || !inputValue.trim()} aria-label="Enviar mensagem" size="lg">
           {isLoading ? (
             <Loader2 className="h-5 w-5 animate-spin" />
           ) : (

@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,33 +9,33 @@ body {
 
 @layer base {
   :root {
-    --background: 0 0% 94.1%; /* #F0F0F0 Light Grey */
-    --foreground: 0 0% 20%;   /* #333333 Dark Grey for text */
+    --background: 0 0% 98%; /* Off-white, very light grey */
+    --foreground: 0 0% 15%;   /* Darker Grey for text */
 
     --card: 0 0% 100%; /* White */
-    --card-foreground: 0 0% 20%;
+    --card-foreground: 0 0% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 20%;
+    --popover-foreground: 0 0% 15%;
 
-    --primary: 88 49% 67%;          /* #AED581 Bright Green (for send/download) */
-    --primary-foreground: 88 100% 15%; /* Dark Green for text on primary */
+    --primary: 205 70% 45%;          /* Sophisticated Blue for actions */
+    --primary-foreground: 210 40% 98%; /* Light text for primary */
 
-    --secondary: 207 88% 71%;        /* #64B5F6 Calm Blue (for user messages, other elements) */
-    --secondary-foreground: 210 40% 98%; /* Light Blue/White for text on secondary */
+    --secondary: 220 15% 96%;        /* Very light cool grey for user messages */
+    --secondary-foreground: 220 10% 35%; /* Darker text on secondary */
 
-    --muted: 0 0% 88%; /* Slightly darker grey for muted elements, e.g. bot messages */
-    --muted-foreground: 0 0% 30%;
+    --muted: 0 0% 92%; /* Slightly lighter grey for muted elements, e.g. bot messages */
+    --muted-foreground: 0 0% 40%;
 
-    --accent: 88 49% 67%; /* Kept green as accent, can be used explicitly */
-    --accent-foreground: 88 100% 15%;
+    --accent: 205 70% 45%; /* Follows primary */
+    --accent-foreground: 210 40% 98%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 80%;
-    --input: 0 0% 98%; /* Lighter input background for contrast */
-    --ring: 88 49% 60%; /* Ring color based on primary (green) */
+    --border: 0 0% 90%;
+    --input: 0 0% 97%; /* Slightly different from background for inputs */
+    --ring: 205 70% 45%; /* Ring color based on new primary */
 
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
@@ -56,33 +57,33 @@ body {
 
   .dark {
     /* Define dark theme if needed, for now focus on light theme as per request */
-    --background: 0 0% 10%; /* Dark background */
-    --foreground: 0 0% 95%;   /* Light foreground */
+    --background: 224 71% 4%; /* Dark blue background */
+    --foreground: 210 40% 98%; /* Light foreground */
 
-    --card: 0 0% 15%;
-    --card-foreground: 0 0% 95%;
+    --card: 224 71% 9%; /* Slightly lighter dark blue for cards */
+    --card-foreground: 210 40% 98%;
 
-    --popover: 0 0% 15%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 224 71% 9%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 88 49% 67%;
-    --primary-foreground: 88 100% 15%;
+    --primary: 205 80% 55%; /* Brighter blue for dark mode primary */
+    --primary-foreground: 210 40% 10%; /* Dark text for primary in dark mode */
+    
+    --secondary: 220 15% 15%; /* Darker grey for user messages */
+    --secondary-foreground: 220 10% 75%; /* Lighter text on secondary */
 
-    --secondary: 207 88% 71%;
-    --secondary-foreground: 210 40% 98%;
+    --muted: 224 71% 12%; /* Muted elements */
+    --muted-foreground: 210 40% 70%;
 
-    --muted: 0 0% 25%;
-    --muted-foreground: 0 0% 70%;
+    --accent: 205 80% 55%;
+    --accent-foreground: 210 40% 10%;
 
-    --accent: 88 49% 67%;
-    --accent-foreground: 88 100% 15%;
-
-    --destructive: 0 70% 50%;
+    --destructive: 0 63% 31%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 30%;
-    --input: 0 0% 20%;
-    --ring: 88 49% 60%;
+    --border: 210 40% 25%;
+    --input: 224 71% 11%;
+    --ring: 205 80% 55%;
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;

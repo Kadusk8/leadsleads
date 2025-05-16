@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
@@ -15,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Webhook Data Exporter',
-  description: 'Chat with a webhook and export data.',
+  title: 'Exportador de Dados Webhook',
+  description: 'Converse com um webhook e exporte dados de forma eficiente.',
 };
 
 export default function RootLayout({
@@ -25,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn(geistSans.variable, geistMono.variable)}>
+    <html lang="pt-BR" className={cn(geistSans.variable, geistMono.variable)}>
       <body
         className={cn(
           'antialiased'
