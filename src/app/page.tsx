@@ -20,7 +20,7 @@ export default function WebhookChatPage() {
     setCurrentYear(new Date().getFullYear());
   }, []);
 
-  const webhookUrl = 'https://n8n.automacaocomia.pro/webhook-test/292392d1-5d1c-40b6-bf11-ddbd968a0ff7';
+  const webhookUrl = 'https://n8n.automacaocomia.pro/webhook-test/8c6d76e3-d1ed-4c85-8c5e-2dfa2ff2712c';
 
   const handleSendMessage = async (messageText: string) => {
     if (!messageText.trim()) return;
@@ -100,7 +100,6 @@ export default function WebhookChatPage() {
                   if (newTableData.length > 0) {
                      botResponseMessage = `Recebemos ${newTableData.length} ${newTableData.length === 1 ? 'registro tabular' : 'registros tabulares'}. Veja a tabela abaixo.`;
                   } else {
-                     // This case should be rare if firstItem was an object, but good to have
                      botResponseMessage = "O webhook retornou uma lista de objetos, mas após a filtragem, não restaram dados válidos para a tabela.";
                   }
               } else if (['string', 'number', 'boolean'].includes(typeof firstItem)) {
@@ -288,3 +287,4 @@ export default function WebhookChatPage() {
     </div>
   );
 }
+
