@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Exportador de Dados Webhook',
-  description: 'Converse com um webhook e exporte dados de forma eficiente.',
+  title: 'Catalisador de Leads',
+  description: 'Converse para encontrar, analisar e exportar leads de forma eficiente.',
 };
 
 export default function RootLayout({
