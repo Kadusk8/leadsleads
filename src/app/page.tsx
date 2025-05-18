@@ -7,7 +7,7 @@ import { ChatInterface, type Message } from '@/components/chat/ChatInterface';
 import { DataTable } from '@/components/data/DataTable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { AlertTriangle, Loader2, Sparkles } from 'lucide-react'; // Ícone atualizado aqui
+import { AlertTriangle, Loader2, Sparkles } from 'lucide-react'; 
 
 export default function WebhookChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -20,7 +20,7 @@ export default function WebhookChatPage() {
     setCurrentYear(new Date().getFullYear());
   }, []);
 
-  const webhookUrl = 'https://n8n.automacaocomia.pro/webhook/05d50243-be01-4324-9a66-b8bc6a580dd5';
+  const webhookUrl = 'https://n8n.automacaocomia.pro/webhook-test/292392d1-5d1c-40b6-bf11-ddbd968a0ff7';
 
   const handleSendMessage = async (messageText: string) => {
     if (!messageText.trim()) return;
@@ -235,9 +235,9 @@ export default function WebhookChatPage() {
     <div className="flex flex-col min-h-screen items-center justify-start p-4 pt-12 md:p-8 md:pt-16 bg-background">
       <header className="w-full max-w-4xl mb-10 text-center">
         <div className="flex flex-col items-center justify-center gap-3 mb-4">
-          <Sparkles className="h-12 w-12 text-primary" /> {/* Ícone atualizado aqui */}
+          <Sparkles className="h-12 w-12 text-primary" />
           <h1 className="text-4xl md:text-5xl font-semibold text-foreground tracking-tight">
-            Catalisador de Leads {/* Nome atualizado aqui */}
+            Catalisador de Leads
           </h1>
         </div>
         <p className="text-md md:text-lg text-muted-foreground max-w-xl mx-auto">
@@ -266,9 +266,10 @@ export default function WebhookChatPage() {
         )}
       </div>
        <footer className="w-full max-w-4xl mt-16 mb-8 pt-8 border-t text-center text-sm text-muted-foreground">
-        <p>&copy; {currentYear !== null ? currentYear : '....'} Catalisador de Leads. Todos os direitos reservados.</p> {/* Nome atualizado aqui */}
+        <p>&copy; {currentYear !== null ? currentYear : '....'} Catalisador de Leads. Todos os direitos reservados.</p>
         <p>Construído com Next.js e ShadCN UI.</p>
       </footer>
     </div>
   );
 }
+
