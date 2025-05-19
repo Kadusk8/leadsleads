@@ -7,7 +7,7 @@ import { ChatInterface, type Message } from '@/components/chat/ChatInterface';
 import { DataTable } from '@/components/data/DataTable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { AlertTriangle, Loader2, Sparkles } from 'lucide-react'; 
+import { AlertTriangle, Loader2, Sparkles } from 'lucide-react';
 
 export default function WebhookChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -100,7 +100,7 @@ export default function WebhookChatPage() {
                      botResponseMessage = "O webhook retornou uma lista, mas após a filtragem, não restaram dados válidos para a tabela (objetos).";
                   }
               } else if (['string', 'number', 'boolean'].includes(typeof firstItem) || firstItem === null) {
-                  newTableData = dataForTableProcessing.map(item => ({ Item: item }));
+                  newTableData = dataForTableProcessing.map((item, index) => ({ Id: index + 1, Item: item })); 
                   botResponseMessage = `Recebemos uma lista com ${newTableData.length} ${newTableData.length === 1 ? 'item simples' : 'itens simples'}. Veja a tabela abaixo.`;
               } else {
                   botResponseMessage = (
@@ -129,7 +129,7 @@ export default function WebhookChatPage() {
                             break; 
                            }
                       } else if (['string', 'number', 'boolean'].includes(typeof firstItem) || firstItem === null) {
-                          newTableData = currentArray.map((item: any) => ({ Item: item }));
+                          newTableData = currentArray.map((item: any, index: number) => ({ Id: index + 1, Item: item }));
                           botResponseMessage = `Encontramos uma lista com ${newTableData.length} ${newTableData.length === 1 ? 'item simples' : 'itens simples'} na chave '${key}'. Veja a tabela abaixo.`;
                           foundArrayInObject = true;
                           break;
@@ -142,11 +142,11 @@ export default function WebhookChatPage() {
                             </div>
                         );
                         newTableData = []; 
-                        foundArrayInObject = true; 
+                        foundArrayInObject = true;
                         break;
                       }
                   } else {
-                      botResponseMessage = `A chave '${key}' continha uma lista vazia.`;
+                      botResponseMessage = `A chave '${key}' continha uma lista vazia. Nenhum dado para a tabela.`;
                       newTableData = [];
                       foundArrayInObject = true;
                       break;
@@ -170,7 +170,7 @@ export default function WebhookChatPage() {
               }
           }
       } else if (dataForTableProcessing !== undefined && dataForTableProcessing !== null) { 
-          if (typeof dataForTableProcessing === 'object' && dataForTableProcessing.rawResponse) {
+          if (typeof dataForTableProcessing === 'object' && dataForTableProcessing.rawResponse) { 
              botResponseMessage = (
                 <div>
                     <p>O webhook retornou uma resposta de texto:</p>
@@ -201,7 +201,8 @@ export default function WebhookChatPage() {
       let displayErrorMessage = 'Ocorreu um erro desconhecido.';
       if (error instanceof Error) {
         if (error.message.startsWith('Failed to fetch') || error.message.includes('NetworkError')) {
-          displayErrorMessage = 'Falha ao conectar ao servidor do webhook. Verifique sua conexão ou se o servidor está online e configurado para CORS.';
+          // Alteração aqui para ser mais direto sobre CORS em deploy
+          displayErrorMessage = `Falha ao conectar ao servidor do webhook (${webhookUrl}). Isso frequentemente ocorre devido a problemas de CORS (Cross-Origin Resource Sharing) quando a aplicação está em deploy. Verifique se o servidor do webhook está configurado para permitir requisições do domínio desta aplicação. Problemas de rede ou o servidor do webhook estar offline também podem ser a causa.`;
         } else if (error.message.includes('Falha na requisição ao webhook')) {
           displayErrorMessage = error.message; 
         } else {
