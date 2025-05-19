@@ -20,7 +20,7 @@ export default function WebhookChatPage() {
     setCurrentYear(new Date().getFullYear());
   }, []);
 
-  const webhookUrl = 'https://n8n.automacaocomia.pro/webhook-test/292392d1-5d1c-40b6-bf11-ddbd968a0ff7';
+  const webhookUrl = 'https://webhook.automacaocomia.pro/webhook/292392d1-5d1c-40b6-bf11-ddbd968a0ff7';
 
   const handleSendMessage = async (messageText: string) => {
     if (!messageText.trim()) return;
