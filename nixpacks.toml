@@ -1,0 +1,8 @@
+# nixpacks.toml
+[phases.setup]
+nixPkgs = ["...", "python3"] # Adicione python3 aqui, mantenha outros pacotes se houver
+
+# Se o script espera 'python' e não 'python3', você pode precisar de um link simbólico
+# ou garantir que o python3 seja o 'python' padrão.
+# Alternativamente, alguns pacotes do Nix podem fornecer 'python' diretamente.
+# Você pode tentar "python" em vez de "python3" se o primeiro não funcionar.
